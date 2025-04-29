@@ -1,11 +1,4 @@
-import {
-  useState,
-  useEffect,
-  type CSSProperties,
-  type Dispatch,
-  type SetStateAction,
-  FormEvent,
-} from 'react';
+import { useState, type CSSProperties, type Dispatch, type SetStateAction } from 'react';
 
 interface CreateUserFormProps {
   setUserWasCreated: Dispatch<SetStateAction<boolean>>;
@@ -14,123 +7,43 @@ interface CreateUserFormProps {
 function CreateUserForm({ setUserWasCreated }: CreateUserFormProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
-  const [apiError, setApiError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const validatePassword = (pwd: string): string[] => {
-    const errors: string[] = [];
-
-    if (pwd.length < 10) errors.push('Password must be at least 10 characters long');
-    if (pwd.length > 24) errors.push('Password must be at most 24 characters long');
-    if (/\s/.test(pwd)) errors.push('Password cannot contain spaces');
-    if (!/\d/.test(pwd)) errors.push('Password must contain at least one number');
-    if (!/[A-Z]/.test(pwd)) errors.push('Password must contain at least one uppercase letter');
-    if (!/[a-z]/.test(pwd)) errors.push('Password must contain at least one lowercase letter');
-
-    return errors;
-  };
-
-  useEffect(() => {
-    setPasswordErrors(validatePassword(password));
-    setApiError('');
-  }, [password]);
-
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setApiError('');
 
-    const pwdErrors = validatePassword(password);
-    if (!username || pwdErrors.length > 0) {
-      setPasswordErrors(pwdErrors);
-      return;
-    }
+    // You can send the username/password to an API here
+    console.log('Submitted Username:', username);
+    console.log('Submitted Password:', password);
 
-    setIsSubmitting(true);
-    try {
-      const res = await fetch(
-        'https://api.challenge.hennge.com/password-validation-challenge-api/001/challenge-signup',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: 'Bearer YOUR_AUTH_TOKEN_HERE', // Replace with your actual token
-          },
-          body: JSON.stringify({ username, password }),
-        }
-      );
-
-      if (res.ok) {
-        setUserWasCreated(true);
-      } else if (res.status === 400) {
-        const data = await res.json();
-        if (
-          data.detail &&
-          data.detail.toLowerCase().includes('password')
-        ) {
-          setApiError(
-            'Sorry, the entered password is not allowed, please try a different one.'
-          );
-        } else {
-          setApiError('Something went wrong, please try again.');
-        }
-      } else if (res.status === 401 || res.status === 403) {
-        setApiError('Not authenticated to access this resource.');
-      } else {
-        setApiError('Something went wrong, please try again.');
-      }
-    } catch {
-      setApiError('Something went wrong, please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    setUserWasCreated(true);
   };
 
   return (
     <div style={formWrapper}>
-      <form style={form} onSubmit={handleSubmit} noValidate>
-        <label htmlFor="username" style={formLabel}>
-          Username
-        </label>
+      <form style={form} onSubmit={handleSubmit}>
+        <label htmlFor="username" style={formLabel}>Username</label>
         <input
           id="username"
           name="username"
+          type="text"
           style={formInput}
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          aria-invalid={!username && isSubmitting}
+          required
         />
 
-        <label htmlFor="password" style={formLabel}>
-          Password
-        </label>
+        <label htmlFor="password" style={formLabel}>Password</label>
         <input
           id="password"
           name="password"
-          style={formInput}
           type="password"
+          style={formInput}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          aria-invalid={passwordErrors.length > 0}
+          required
         />
 
-        {/* Password validation errors */}
-        {passwordErrors.length > 0 && (
-          <ul style={{ color: 'red', margin: '8px 0', paddingLeft: '20px' }}>
-            {passwordErrors.map((error, index) => (
-              <li key={index}>{error}</li>
-            ))}
-          </ul>
-        )}
-
-        {/* API error message */}
-        {apiError && (
-          <div style={{ color: 'red', marginTop: '8px' }}>{apiError}</div>
-        )}
-
-        <button type="submit" style={formButton} disabled={isSubmitting}>
-          {isSubmitting ? 'Submitting...' : 'Create User'}
-        </button>
+        <button type="submit" style={formButton}>Create User</button>
       </form>
     </div>
   );
