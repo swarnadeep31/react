@@ -1,0 +1,196 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "HENNGE GIP Challenge - OpenAPI 3.0",
+        "description": "This is the Open API specification used as reference for the HENNGE GIP challenge. You will need to properly authorize via token authentication in order to use this API.",
+        "version": "001"
+    },
+    "servers": [
+        {
+            "url": "api.challenge.hennge.com/password-validation-challenge-api/001"
+        }
+    ],
+    "tags": [
+        {
+            "name": "challenge",
+            "description": "The necessary endpoint for the challenge"
+        }
+    ],
+    "paths": {
+        "/challenge-signup": {
+            "post": {
+                "tags": [
+                    "challenge"
+                ],
+                "summary": "Submit a username and password for validation",
+                "operationId": "challengeSignup",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SignupRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponseSuccess"
+                                },
+                                "example": {
+                                    "success": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponseFailure"
+                                },
+                                "example": {
+                                    "success": false,
+                                    "errors": [
+                                        "invalid_request"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "type": "string",
+                                    "example": "Unauthorized"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden to access the resource",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "type": "string",
+                                    "example": "Forbidden"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation exception",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiResponseFailure"
+                                },
+                                "example": {
+                                    "success": false,
+                                    "errors": [
+                                        "too_short",
+                                        "no_whitespace"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "type": "string",
+                                    "example": "Internal server error"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerToken": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "ApiResponseFailure": {
+                "required": [
+                    "success",
+                    "errors"
+                ],
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "description": "A boolean value if the request failed"
+                    },
+                    "errors": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "invalid_request",
+                                "too_short",
+                                "too_long",
+                                "no_whitespace",
+                                "missing_digits",
+                                "missing_uppercase",
+                                "missing_lowercase",
+                                "not_allowed"
+                            ]
+                        },
+                        "description": "An array of error codes if the request was unsuccessful",
+                        "uniqueItems": true
+                    }
+                }
+            },
+            "ApiResponseSuccess": {
+                "required": [
+                    "success"
+                ],
+                "type": "object",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "description": "A boolean value if the request was successful"
+                    }
+                }
+            },
+            "SignupRequest": {
+                "required": [
+                    "username",
+                    "password"
+                ],
+                "type": "object",
+                "properties": {
+                    "username": {
+                        "type": "string"
+                    },
+                    "password": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "securitySchemes": {
+            "BearerToken": {
+                "description": "Please refer to RFC 6750. Your token can be found in the path parameter of the Admission Challenge's `/challenge-details` (Challenge Details) page.",
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        }
+    }
+}
