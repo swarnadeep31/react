@@ -1,21 +1,64 @@
-import { useState, type CSSProperties, type Dispatch, type SetStateAction } from 'react';
+import { useState, useEffect, type CSSProperties, type Dispatch, type SetStateAction } from 'react';
 
 interface CreateUserFormProps {
   setUserWasCreated: Dispatch<SetStateAction<boolean>>;
 }
 
+const API_URL = 'https://api.challenge.hennge.com/password-validation-challenge-api/001/challenge-signup';
+const AUTH_TOKEN = 'YOUR_AUTH_TOKEN_HERE'; // Replace this with your token from challenge-details page
+
 function CreateUserForm({ setUserWasCreated }: CreateUserFormProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [apiError, setApiError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const errors = [];
+
+    if (password.length < 10) errors.push('Password must be at least 10 characters long');
+    if (password.length > 24) errors.push('Password must be at most 24 characters long');
+    if (/\s/.test(password)) errors.push('Password cannot contain spaces');
+    if (!/[0-9]/.test(password)) errors.push('Password must contain at least one number');
+    if (!/[A-Z]/.test(password)) errors.push('Password must contain at least one uppercase letter');
+    if (!/[a-z]/.test(password)) errors.push('Password must contain at least one lowercase letter');
+
+    setValidationErrors(errors);
+  }, [password]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setApiError('');
 
-    // You can send the username/password to an API here
-    console.log('Submitted Username:', username);
-    console.log('Submitted Password:', password);
+    if (!username || validationErrors.length > 0) return;
 
-    setUserWasCreated(true);
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${AUTH_TOKEN}`,
+        },
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (res.ok) {
+        setUserWasCreated(true);
+      } else if (res.status === 400) {
+        const data = await res.json();
+        if (data.error && data.error.includes('not allowed')) {
+          setApiError('Sorry, the entered password is not allowed, please try a different one.');
+        } else {
+          setApiError('Something went wrong, please try again.');
+        }
+      } else if (res.status === 401 || res.status === 403) {
+        setApiError('Not authenticated to access this resource.');
+      } else {
+        setApiError('Something went wrong, please try again.');
+      }
+    } catch {
+      setApiError('Something went wrong, please try again.');
+    }
   };
 
   return (
@@ -30,6 +73,7 @@ function CreateUserForm({ setUserWasCreated }: CreateUserFormProps) {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           required
+          aria-invalid={!username ? 'true' : 'false'}
         />
 
         <label htmlFor="password" style={formLabel}>Password</label>
@@ -41,7 +85,20 @@ function CreateUserForm({ setUserWasCreated }: CreateUserFormProps) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          aria-invalid={validationErrors.length > 0 ? 'true' : 'false'}
         />
+
+        {validationErrors.length > 0 && (
+          <ul style={{ color: 'red', paddingLeft: '20px', margin: 0 }}>
+            {validationErrors.map((err, idx) => (
+              <li key={idx}>{err}</li>
+            ))}
+          </ul>
+        )}
+
+        {apiError && (
+          <div style={{ color: 'red', marginTop: '8px' }}>{apiError}</div>
+        )}
 
         <button type="submit" style={formButton}>Create User</button>
       </form>
@@ -51,6 +108,7 @@ function CreateUserForm({ setUserWasCreated }: CreateUserFormProps) {
 
 export { CreateUserForm };
 
+// Keep your existing styles unchanged
 const formWrapper: CSSProperties = {
   maxWidth: '500px',
   width: '80%',
